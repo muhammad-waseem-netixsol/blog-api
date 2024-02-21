@@ -60,8 +60,7 @@ export class AuthController {
     @Body() signUpDto: SignUpDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
-  
-         // checking file
+    // checking file
     const fileIsValid = this.authService.checkfileIsValid(file);
     if(!fileIsValid){
       throw new BadRequestException("File is required!");
@@ -79,8 +78,6 @@ export class AuthController {
     const hash = await this.authService.hashPassword(password);
     const user = await this.authService.createUser(name, username,email, role, userStatus, image.secure_url, hash );
     return {user};
-   
- 
   }
 
   // login controller
@@ -89,11 +86,9 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'SUCCESSFULL' })
   @ApiResponse({ status: 404, description: 'BAD REQUEST' })
   async logIn(@Body() logInDto: LogInDto) {
-  
       const { email } = logInDto;
       console.log(email)
       const userExists = await this.authService.findUserByEmail(email);
-      console.log(userExists)
       if (!userExists) {
         throw new NotFoundException('User not found. Please sign up first.');
       }
@@ -105,9 +100,8 @@ export class AuthController {
       if (!validatePassword) {
         throw new ForbiddenException('invalid credentials!');
       }
-      const response = this.authService.assignToken(userExists._id, userExists);
+      const response = await this.authService.assignToken(userExists._id, userExists);
       return { response };
-   
   }
 
   @Patch(':userId')
@@ -116,7 +110,6 @@ export class AuthController {
   @ApiResponse({ status: 404, description: 'BAD REQUEST' })
   @UseGuards(AuthGuard())
   changeUserStatus(@Param('userId') id: string, @Req() req: any) {
-    console.log('id =>', id);
     return this.authService.userStatus(id, req);
   }
 

@@ -104,14 +104,14 @@ export class AuthService {
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-          user: '-----',
-          pass: '--------',
+          user: 'gorayausman061@gmail.com',
+          pass: 'wqgf vugp mlxd xwca'
         },
       });
       const pinCode = Math.floor(1000 + Math.random() * 9000).toString();
       console.log(pinCode);
       const mailOptions = {
-        from: '--------',
+        from: 'gorayausman061@gmail.com',
         to: email,
         subject: 'Subject',
         text: 'your pin code is ' + pinCode,
