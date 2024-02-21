@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Req,
+  UnauthorizedException,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -88,11 +89,12 @@ export class AuthController {
   @ApiResponse({ status: 404, description: 'BAD REQUEST' })
   async logIn(@Body() logInDto: LogInDto) {
       const { email } = logInDto;
-      console.log(email)
+      // verify user
       const userExists = await this.authService.findUserByEmail(email);
       if (!userExists) {
         throw new NotFoundException('User not found. Please sign up first.');
       }
+      // compare password
       const { password } = logInDto;
       const validatePassword: boolean = await this.authService.compareHashes(
         password,
@@ -101,6 +103,7 @@ export class AuthController {
       if (!validatePassword) {
         throw new ForbiddenException('invalid credentials!');
       }
+      // assign jwt
       const response = await this.authService.assignToken(userExists._id, userExists);
       return { response };
   }
@@ -112,6 +115,10 @@ export class AuthController {
   @ApiBearerAuth('access-token')
   @UseGuards(AuthGuard())
   changeUserStatus(@Param('userId') id: string, @Req() req: any) {
+    const isAdmin = this.authService.verifyingAdmin(id, req);
+    if(!isAdmin){
+      throw new UnauthorizedException("Only admin can block | unblock users.")
+    };
     return this.authService.userStatus(id, req);
   }
 

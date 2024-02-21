@@ -70,7 +70,14 @@ export class AuthService {
       });
       return image;
     }
-
+    // checking if admin
+    async verifyingAdmin(id: string, req: any){
+      if(req?.user?.role === 'admin'){
+        return true;
+      }
+      return false;
+    }
+///////////////////////////////////////////////////////////////
  
   // block or unblock user
   async userStatus(id: string, req: any) {
