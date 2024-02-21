@@ -22,6 +22,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { PinDto } from './dto/pin.dto';
 import { PasswordDto } from './dto/password.dto';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiOperation,
@@ -108,6 +109,7 @@ export class AuthController {
   @ApiOperation({ summary: 'USER STATUS' })
   @ApiResponse({ status: 200, description: 'SUCCESSFULL' })
   @ApiResponse({ status: 404, description: 'BAD REQUEST' })
+  @ApiBearerAuth('access-token')
   @UseGuards(AuthGuard())
   changeUserStatus(@Param('userId') id: string, @Req() req: any) {
     return this.authService.userStatus(id, req);
