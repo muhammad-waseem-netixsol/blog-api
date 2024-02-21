@@ -60,7 +60,7 @@ export class AuthController {
     @Body() signUpDto: SignUpDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    try{
+  
          // checking file
     const fileIsValid = this.authService.checkfileIsValid(file);
     if(!fileIsValid){
@@ -79,9 +79,7 @@ export class AuthController {
     const hash = await this.authService.hashPassword(password);
     const user = await this.authService.createUser(name, username,email, role, userStatus, image.secure_url, hash );
     return {user};
-    }catch(err){
-      return {error: "File type is invalid. Please try png or jpg."}
-    }
+   
  
   }
 
@@ -91,9 +89,11 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'SUCCESSFULL' })
   @ApiResponse({ status: 404, description: 'BAD REQUEST' })
   async logIn(@Body() logInDto: LogInDto) {
-    try {
+  
       const { email } = logInDto;
+      console.log(email)
       const userExists = await this.authService.findUserByEmail(email);
+      console.log(userExists)
       if (!userExists) {
         throw new NotFoundException('User not found. Please sign up first.');
       }
@@ -107,9 +107,7 @@ export class AuthController {
       }
       const response = this.authService.assignToken(userExists._id, userExists);
       return { response };
-    } catch (err) {
-      return { error: 'server error occured!' };
-    }
+   
   }
 
   @Patch(':userId')

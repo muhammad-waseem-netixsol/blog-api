@@ -1,14 +1,12 @@
 /* eslint-disable prettier/prettier */
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   NotFoundException,
   NotImplementedException,
 } from '@nestjs/common';
 import { User } from './schema/user.schema';
 import { Model } from 'mongoose';
-import { SignUpDto } from './dto/signup.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -72,35 +70,7 @@ export class AuthService {
       });
       return image;
     }
-  // sign up controller
-  async signUp(signUpDto: SignUpDto, file: Express.Multer.File) {
-    if (!file) {
-      return { error: true, message: 'Image is required' };
-    }
-    const { username, name, email, password, role, userStatus } = signUpDto;
-    const userExists = await this.userModel.findOne({ email: email });
-    if (userExists)
-      throw new ConflictException(
-        'User already exists. PLease try different email..',
-      );
-    const image = await this.cloudinary.uploadImage(file).catch((err) => {
-      console.log(err);
-      throw new BadRequestException(
-        'File uploading failed. Please select valid file type',
-      );
-    });
-    const hashed = await bcrypt.hash(password, 10);
-    await this.userModel.create({
-      username,
-      name,
-      email,
-      password: hashed,
-      role,
-      image: image.secure_url,
-      userStatus,
-    });
-    return { success: 'User created' };
-  }
+
  
   // block or unblock user
   async userStatus(id: string, req: any) {
