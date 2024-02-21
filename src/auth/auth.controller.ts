@@ -141,7 +141,7 @@ export class AuthController {
   async resetPassword(@Body() resetDto: ResetDto) {
     const {email} = resetDto;
     const userExists = await this.authService.findUserByEmail(email);
-    if(!userExists){
+    if(!userExists){ 
       throw new NotFoundException("User does not exist. Try valid email.")
     }
     // sending email
