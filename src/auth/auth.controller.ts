@@ -138,9 +138,19 @@ export class AuthController {
   @ApiOperation({ summary: 'RESET PASS' })
   @ApiResponse({ status: 200, description: 'SUCCESSFULL' })
   @ApiResponse({ status: 404, description: 'BAD REQUEST' })
-  resetPassword(@Body() resetDto: ResetDto) {
-    return this.authService.resetPassword(resetDto);
+  async resetPassword(@Body() resetDto: ResetDto) {
+    const {email} = resetDto;
+    const userExists = await this.authService.findUserByEmail(email);
+    if(!userExists){
+      throw new NotFoundException("User does not exist. Try valid email.")
+    }
+    // sending email
+    const emailSending = await this.authService.sendEmailUsingNodeMailer(email, userExists._id);
+    return {token : emailSending, message: "Please check your email box and enter pin."};
   }
+
+
+
   @Post('/validate-pin')
   @ApiOperation({ summary: 'VALIDATE PIN' })
   @ApiResponse({ status: 200, description: 'SUCCESSFULL' })

@@ -26,93 +26,117 @@ export class AuthService {
     private cloudinary: CloudinaryService,
   ) {}
   // find user by email
-    async findUserByEmail(email: string){
-      return await this.userModel.findOne({email: email});
-    }
-    // check if password matches
-    async compareHashes(pass: string, password: string){
-      return await bcrypt.compare(pass, password);
-    }
-    // this service signs token
-    async assignToken(id:ObjectId, user:User){
-      return { token: this.jwtService.sign({ id: id }), username: user.name, email: user.email };
-    }
-    // checking multer file is valid
-    checkfileIsValid(file: Express.Multer.File){
-      if(!file){
-        return false;
-      }
-      return true;
-    }
-    // convert plain password to hash
-    async hashPassword(password: string){
-      return await bcrypt.hash(password, 10);
-    }
-    // create user in mongodb
-    async createUser(name:string, username: string, email: string, role: string, userStatus: string, image:string, password: string ){
-      return await this.userModel.create({
-        username,
-        name,
-        email,
-        password,
-        role,
-        image,
-        userStatus,
-      });
-    }
-    // host image on cludinary
-    async hostFileOnCloundinary(file: Express.Multer.File){
-      const image = await this.cloudinary.uploadImage(file).catch((err) => {
-        console.log(err);
-        throw new BadRequestException(
-          'File uploading failed. Please select valid file type',
-        );
-      });
-      return image;
-    }
-    // checking if admin
-    async verifyingAdmin(req: any){
-      if(req?.user?.role === 'admin'){
-        return true;
-      }
-      return false;
-    }
-    // object id conversion
-    convertID(id:string){
-      return new ObjectId(id);
-    }
-    // find user by id
-    async findUserById(id:ObjectId){
-      return await this.userModel.findById(id);
-    }
-    // changing userStaus block -> unblock or vice versa
-    async changeUserStatus(user: User){
-      return await this.userModel.findByIdAndUpdate(user._id, {
-        userStatus: user.userStatus === 'unblock' ? 'block' : 'unblock',
-      }, {new: true});
-    }
-///////////////////////////////////////////////////////////////
- 
-  // block or unblock user
-  async userStatus(id: string, req: any) {
-    const loggedUser = req?.user;
-    if (loggedUser.role === 'admin') {
-      const userId = new ObjectId(id);
-      const userExists = await this.userModel.findById(userId);
-      if (!userExists) {
-        return { message: 'invalid id passed, User does not exist' };
-      }
-      await this.userModel.findByIdAndUpdate(userExists._id, {
-        userStatus: userExists.userStatus === 'unblock' ? 'block' : 'unblock',
-      });
-      return {
-        message: `user has been ${userExists.userStatus === 'block' ? 'unblocked ' : 'blocked '}by ${loggedUser.name}`,
-      };
-    }
+  async findUserByEmail(email: string) {
+    return await this.userModel.findOne({ email: email });
+  }
+  // check if password matches
+  async compareHashes(pass: string, password: string) {
+    return await bcrypt.compare(pass, password);
+  }
+  // this service signs token
+  async assignToken(id: ObjectId, user: User) {
     return {
-      message: 'Only admin has right to block | unblock user.',
+      token: this.jwtService.sign({ id: id }),
+      username: user.name,
+      email: user.email,
     };
   }
+  // checking multer file is valid
+  checkfileIsValid(file: Express.Multer.File) {
+    if (!file) {
+      return false;
+    }
+    return true;
+  }
+  // convert plain password to hash
+  async hashPassword(password: string) {
+    return await bcrypt.hash(password, 10);
+  }
+  // create user in mongodb
+  async createUser(
+    name: string,
+    username: string,
+    email: string,
+    role: string,
+    userStatus: string,
+    image: string,
+    password: string,
+  ) {
+    return await this.userModel.create({
+      username,
+      name,
+      email,
+      password,
+      role,
+      image,
+      userStatus,
+    });
+  }
+  // host image on cludinary
+  async hostFileOnCloundinary(file: Express.Multer.File) {
+    const image = await this.cloudinary.uploadImage(file).catch((err) => {
+      console.log(err);
+      throw new BadRequestException(
+        'File uploading failed. Please select valid file type',
+      );
+    });
+    return image;
+  }
+  // checking if admin
+  async verifyingAdmin(req: any) {
+    if (req?.user?.role === 'admin') {
+      return true;
+    }
+    return false;
+  }
+  // object id conversion
+  convertID(id: string) {
+    return new ObjectId(id);
+  }
+  // find user by id
+  async findUserById(id: ObjectId) {
+    return await this.userModel.findById(id);
+  }
+  // changing userStaus block -> unblock or vice versa
+  async changeUserStatus(user: User) {
+    return await this.userModel.findByIdAndUpdate(
+      user._id,
+      {
+        userStatus: user.userStatus === 'unblock' ? 'block' : 'unblock',
+      },
+      { new: true },
+    );
+  }
+  // send email using nodemailer
+  async sendEmailUsingNodeMailer(email: string, id: ObjectId){
+    // transpoter object
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: 'gorayausman061@gmail.com',
+        pass: 'wqgf vugp mlxd xwca',
+      },
+    });
+    // generating 4-digit code
+    const pinCode = Math.floor(1000 + Math.random() * 9000).toString();
+    // mail options
+    const mailOptions = {
+      from: 'gorayausman061@gmail.com',
+      to: email,
+      subject: 'Subject',
+      text: 'your pin code is ' + pinCode,
+    };
+    // sending email
+    await transporter.sendMail(mailOptions);
+      const token = this.jwtService.sign({
+        user: id.toString(),
+        pin: pinCode,
+      });
+      return token;
+  }
+
+  ///////////////////////////////////////////////////////////////
+
   // sends user with pincode
   async resetPassword(resetDto: ResetDto) {
     try {
@@ -126,7 +150,7 @@ export class AuthService {
         service: 'gmail',
         auth: {
           user: 'gorayausman061@gmail.com',
-          pass: 'wqgf vugp mlxd xwca'
+          pass: 'wqgf vugp mlxd xwca',
         },
       });
       const pinCode = Math.floor(1000 + Math.random() * 9000).toString();
@@ -166,17 +190,19 @@ export class AuthService {
   }
   // change password
   async changePassword(passwordDto: PasswordDto, req: any) {
-    const {password} = passwordDto; 
-     const user = await this.userModel.findOne({_id: req?.user?._id});
-     if(!user){
-      throw new NotFoundException("You are not member of this blog app. Please sign up first")
-     }
-     const hash = await bcrypt.hash(password, 10);
-     if(!hash){
-      throw new BadRequestException("Invalid password.");
-     }
-     user.password = hash;
-     await user.save();
-     return {message: "Password changed"}
+    const { password } = passwordDto;
+    const user = await this.userModel.findOne({ _id: req?.user?._id });
+    if (!user) {
+      throw new NotFoundException(
+        'You are not member of this blog app. Please sign up first',
+      );
+    }
+    const hash = await bcrypt.hash(password, 10);
+    if (!hash) {
+      throw new BadRequestException('Invalid password.');
+    }
+    user.password = hash;
+    await user.save();
+    return { message: 'Password changed' };
   }
 }
