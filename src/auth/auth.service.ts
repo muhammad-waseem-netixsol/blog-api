@@ -9,7 +9,6 @@ import {
 import { User } from './schema/user.schema';
 import { Model } from 'mongoose';
 import { SignUpDto } from './dto/signup.dto';
-import { LogInDto } from './dto/login.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -28,7 +27,51 @@ export class AuthService {
     private jwtService: JwtService,
     private cloudinary: CloudinaryService,
   ) {}
-
+  // find user by email
+    async findUserByEmail(email: string){
+      return await this.userModel.findOne({email: email});
+    }
+    // check if password matches
+    async compareHashes(pass: string, password: string){
+      return await bcrypt.compare(pass, password);
+    }
+    // this service signs token
+    async assignToken(id:ObjectId, user:User){
+      return { token: this.jwtService.sign({ id: id }), username: user.name, email: user.email };
+    }
+    // checking multer file is valid
+    checkfileIsValid(file: Express.Multer.File){
+      if(!file){
+        return false;
+      }
+      return true;
+    }
+    // convert plain password to hash
+    async hashPassword(password: string){
+      return await bcrypt.hash(password, 10);
+    }
+    // create user in mongodb
+    async createUser(name:string, username: string, email: string, role: string, userStatus: string, image:string, password: string ){
+      return await this.userModel.create({
+        username,
+        name,
+        email,
+        password,
+        role,
+        image,
+        userStatus,
+      });
+    }
+    // host image on cludinary
+    async hostFileOnCloundinary(file: Express.Multer.File){
+      const image = await this.cloudinary.uploadImage(file).catch((err) => {
+        console.log(err);
+        throw new BadRequestException(
+          'File uploading failed. Please select valid file type',
+        );
+      });
+      return image;
+    }
   // sign up controller
   async signUp(signUpDto: SignUpDto, file: Express.Multer.File) {
     if (!file) {
@@ -58,27 +101,7 @@ export class AuthService {
     });
     return { success: 'User created' };
   }
-  // login controller
-  async logIn(logInDto: LogInDto) {
-    try {
-      const { email, password } = logInDto;
-      const user = await this.userModel.findOne({ email: email });
-      if (!user) {
-      }
-      if (user.userStatus === 'block') {
-        // res.status(403).json({message: "You can not login. You are blocked by"})
-      }
-      const passwordMatched = await bcrypt.compare(password, user.password);
-      if (!passwordMatched) {
-        throw new BadRequestException(
-          'Wrong passport. Please try right password!',
-        );
-      }
-      return { token: this.jwtService.sign({ id: user._id }) };
-    } catch (err) {
-      return { error: 'Server error occurred!' };
-    }
-  }
+ 
   // block or unblock user
   async userStatus(id: string, req: any) {
     const loggedUser = req?.user;
