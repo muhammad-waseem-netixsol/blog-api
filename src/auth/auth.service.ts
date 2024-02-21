@@ -71,11 +71,25 @@ export class AuthService {
       return image;
     }
     // checking if admin
-    async verifyingAdmin(id: string, req: any){
+    async verifyingAdmin(req: any){
       if(req?.user?.role === 'admin'){
         return true;
       }
       return false;
+    }
+    // object id conversion
+    convertID(id:string){
+      return new ObjectId(id);
+    }
+    // find user by id
+    async findUserById(id:ObjectId){
+      return await this.userModel.findById(id);
+    }
+    // changing userStaus block -> unblock or vice versa
+    async changeUserStatus(user: User){
+      return await this.userModel.findByIdAndUpdate(user._id, {
+        userStatus: user.userStatus === 'unblock' ? 'block' : 'unblock',
+      }, {new: true});
     }
 ///////////////////////////////////////////////////////////////
  

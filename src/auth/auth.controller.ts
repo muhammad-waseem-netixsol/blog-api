@@ -114,12 +114,24 @@ export class AuthController {
   @ApiResponse({ status: 404, description: 'BAD REQUEST' })
   @ApiBearerAuth('access-token')
   @UseGuards(AuthGuard())
-  changeUserStatus(@Param('userId') id: string, @Req() req: any) {
-    const isAdmin = this.authService.verifyingAdmin(id, req);
+  async changeUserStatus(@Param('userId') id: string, @Req() req: any) {
+    // verifying admin
+    const isAdmin = this.authService.verifyingAdmin(req);
     if(!isAdmin){
       throw new UnauthorizedException("Only admin can block | unblock users.")
     };
-    return this.authService.userStatus(id, req);
+    // converting string into object id
+    const objId = this.authService.convertID(id);
+    // finding user
+    const user = await this.authService.findUserById(objId);
+    if(!user){
+      throw new NotFoundException("User does not found!");
+    };
+    // changing user status
+    const status = await this.authService.changeUserStatus(user);
+    if(status){
+      return {message: `User has been ${status.userStatus}ed by Admin!`}
+    }
   }
 
   @Post('/reset-password')
