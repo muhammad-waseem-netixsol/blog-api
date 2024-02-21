@@ -4,13 +4,13 @@ import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @Controller('blog')
 @ApiTags("BLOG")
 export class BlogController {
   constructor(private readonly blogService: BlogService) {}
-
+  @ApiBearerAuth()
   @Post("/create-blog")
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -33,6 +33,7 @@ export class BlogController {
   @ApiOperation({summary:"CREATE BLOG"})
   @ApiResponse({status: 200, description: "SUCCESSFULL"})
   @ApiResponse({status: 404, description: "BAD REQUEST"})
+  @ApiBearerAuth('access-token')
   @UseGuards(AuthGuard())
   @UseInterceptors(FileInterceptor("file"))
   create(@Body() createBlogDto: CreateBlogDto, @Req() req:any, @UploadedFile() file: Express.Multer.File) {
@@ -47,45 +48,56 @@ export class BlogController {
     return this.blogService.findAll();
   }
 
+  @ApiBearerAuth()
   @Get(':id')
   @ApiOperation({summary:"GET BLOG BY ID"})
   @ApiResponse({status: 200, description: "SUCCESSFULL"})
   @ApiResponse({status: 404, description: "BAD REQUEST"})
+  @ApiBearerAuth('access-token')
   @UseGuards(AuthGuard())
   findOneBlog(@Param('id') id: string) {
     return this.blogService.findOne(id);
   }
 
+  @ApiBearerAuth()
   @Patch('/update/:id')
   @ApiOperation({summary:"UPDATE BLOG"})
   @ApiResponse({status: 200, description: "SUCCESSFULL"})
   @ApiResponse({status: 404, description: "BAD REQUEST"})
+  @ApiBearerAuth('access-token')
   @UseGuards(AuthGuard())
   update(@Param('id') id: string, @Body() updateBlogDto: UpdateBlogDto, @Req() req:any) {
     return this.blogService.update(id, updateBlogDto, req);
   }
 
+  @ApiBearerAuth()
   @Delete('/delete/:id')
   @ApiOperation({summary:"DELETE BLOG BY ID"})
   @ApiResponse({status: 200, description: "SUCCESSFULL"})
   @ApiResponse({status: 404, description: "BAD REQUEST"})
+  @ApiBearerAuth('access-token')
   @UseGuards(AuthGuard())
   removeBlog(@Param('id') id: string, @Req() req:any) {
     return this.blogService.remove(id, req);
   }
 
+  @ApiBearerAuth()
   @Patch('/approve/:id')
   @ApiOperation({summary:"ADMIN APPROVES BLOG"})
   @ApiResponse({status: 200, description: "SUCCESSFULL"})
   @ApiResponse({status: 404, description: "BAD REQUEST"})
+  @ApiBearerAuth('access-token')
   @UseGuards(AuthGuard())
   approveBlog(@Param('id') id: string, @Req() req:any) {
     return this.blogService.approve(id, req);
   }
+
+  @ApiBearerAuth()
   @Patch('/reject/:id')
   @ApiOperation({summary:"ADMIN REJECTS BLOG"})
   @ApiResponse({status: 200, description: "SUCCESSFULL"})
   @ApiResponse({status: 404, description: "BAD REQUEST"})
+  @ApiBearerAuth('access-token')
   @UseGuards(AuthGuard())
   rejectBlog(@Param('id') id: string, @Req() req:any) {
     return this.blogService.reject(id, req);
