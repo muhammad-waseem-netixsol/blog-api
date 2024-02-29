@@ -2,10 +2,11 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+ const app = await NestFactory.create(AppModule, { cors: true });
   app.use(cookieParser());
   // swagger setup
   const config = new DocumentBuilder()
@@ -39,8 +40,12 @@ SwaggerModule.setup('api', app, document, {
   ],
 });
   app.useGlobalPipes(new ValidationPipe());
-
-  app.enableCors()
+const corsOptions: CorsOptions = {
+    origin: ['https://finale-frontend.vercel.app'],
+    methods:  ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+  };
+  // Enable CORS with options
+  app.enableCors(corsOptions);
  
   await app.listen(3001);
 }
