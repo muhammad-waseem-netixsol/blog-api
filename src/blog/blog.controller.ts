@@ -41,11 +41,30 @@ export class BlogController {
   }
 
   @Get("/get-blogs")
-  @ApiOperation({summary:"GET ALL BLOG"})
+  @ApiOperation({summary:"GET ALL APPROVED BLOGS"})
   @ApiResponse({status: 200, description: "SUCCESSFULL"})
   @ApiResponse({status: 404, description: "BAD REQUEST"})
   findAllBlogs() {
     return this.blogService.findAll();
+  }
+  
+  @ApiBearerAuth()
+  @Get('/user-blogs')
+  @ApiOperation({summary:"ADMIN APPROVES BLOG"})
+  @ApiResponse({status: 200, description: "SUCCESSFULL"})
+  @ApiResponse({status: 404, description: "BAD REQUEST"})
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard())
+  userBlogs(@Req() req:any) {
+    return this.blogService.getAllUserBlogs(req);
+  }
+  @Get("/pending-blogs")
+  @ApiOperation({summary:"GET ALL APPROVED BLOGS"})
+  @ApiResponse({status: 200, description: "SUCCESSFULL"})
+  @ApiResponse({status: 404, description: "BAD REQUEST"})
+  @UseGuards(AuthGuard())
+  findPendingBlogs(@Req() req:any) {
+    return this.blogService.pendingAll(req);
   }
 
   @ApiBearerAuth()
@@ -54,7 +73,7 @@ export class BlogController {
   @ApiResponse({status: 200, description: "SUCCESSFULL"})
   @ApiResponse({status: 404, description: "BAD REQUEST"})
   @ApiBearerAuth('access-token')
-  @UseGuards(AuthGuard())
+  // @UseGuards(AuthGuard())
   findOneBlog(@Param('id') id: string) {
     return this.blogService.findOne(id);
   }
@@ -91,6 +110,7 @@ export class BlogController {
   approveBlog(@Param('id') id: string, @Req() req:any) {
     return this.blogService.approve(id, req);
   }
+
 
   @ApiBearerAuth()
   @Patch('/reject/:id')

@@ -4,17 +4,20 @@ import {
   ConflictException,
   Controller,
   ForbiddenException,
+  Get,
   NotFoundException,
   Param,
   Patch,
   Post,
   Req,
+  Res,
   UnauthorizedException,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { Response } from 'express';
 import { SignUpDto } from './dto/signup.dto';
 import { LogInDto } from './dto/login.dto';
 import { AuthGuard } from '@nestjs/passport';
@@ -30,6 +33,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { ObjectId } from 'mongodb';
 
 @Controller('auth')
 @ApiTags('Authentication')
@@ -64,22 +68,32 @@ export class AuthController {
   ) {
     // checking file
     const fileIsValid = this.authService.checkfileIsValid(file);
-    if(!fileIsValid){
-      throw new BadRequestException("File is required!");
+    if (!fileIsValid) {
+      throw new BadRequestException('File is required!');
     }
     // image on cloud
     const image = await this.authService.hostFileOnCloundinary(file);
     // checking user
-    const {email} = signUpDto;
+    const { email } = signUpDto;
     const userExists = await this.authService.findUserByEmail(email);
-    if(userExists){
-      throw new ConflictException("User already exists. Please try different email.")
+    if (userExists) {
+      throw new ConflictException(
+        'User already exists. Please try different email.',
+      );
     }
     // hashing password using bcrypt
-    const {password,name, userStatus, username, role } = signUpDto;
+    const { password, name, userStatus, username, role } = signUpDto;
     const hash = await this.authService.hashPassword(password);
-    const user = await this.authService.createUser(name, username,email, role, userStatus, image.secure_url, hash );
-    return {user};
+    const user = await this.authService.createUser(
+      name,
+      username,
+      email,
+      role,
+      userStatus,
+      image.secure_url,
+      hash,
+    );
+    return { user };
   }
 
   // login controller
@@ -87,25 +101,29 @@ export class AuthController {
   @ApiOperation({ summary: 'THIS LOGS YOU IN' })
   @ApiResponse({ status: 200, description: 'SUCCESSFULL' })
   @ApiResponse({ status: 404, description: 'BAD REQUEST' })
-  async logIn(@Body() logInDto: LogInDto) {
-      const { email } = logInDto;
-      // verify user
-      const userExists = await this.authService.findUserByEmail(email);
-      if (!userExists) {
-        throw new NotFoundException('User not found. Please sign up first.');
-      }
-      // compare password
-      const { password } = logInDto;
-      const validatePassword: boolean = await this.authService.compareHashes(
-        password,
-        userExists.password,
-      );
-      if (!validatePassword) {
-        throw new ForbiddenException('invalid credentials!');
-      }
-      // assign jwt
-      const response = await this.authService.assignToken(userExists._id, userExists);
-      return { response };
+  async logIn(
+    @Body() logInDto: LogInDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const { email } = logInDto;
+    // verify user
+    const userExists = await this.authService.findUserByEmail(email);
+    if (!userExists) {
+      throw new NotFoundException('User not found. Please sign up first.');
+    }
+    // compare password
+    const { password } = logInDto;
+    const validatePassword: boolean = await this.authService.compareHashes(
+      password,
+      userExists.password,
+    );
+    if (!validatePassword) {
+      throw new ForbiddenException('invalid credentials!');
+    }
+    // assign jwt
+    const resp = await this.authService.assignToken(userExists._id, userExists);
+    response.cookie('token', JSON.stringify(resp), { httpOnly: true });
+    return { response: resp };
   }
 
   @Patch(':userId')
@@ -117,20 +135,20 @@ export class AuthController {
   async changeUserStatus(@Param('userId') id: string, @Req() req: any) {
     // verifying admin
     const isAdmin = this.authService.verifyingAdmin(req);
-    if(!isAdmin){
-      throw new UnauthorizedException("Only admin can block | unblock users.")
-    };
+    if (!isAdmin) {
+      throw new UnauthorizedException('Only admin can block | unblock users.');
+    }
     // converting string into object id
     const objId = this.authService.convertID(id);
     // finding user
     const user = await this.authService.findUserById(objId);
-    if(!user){
-      throw new NotFoundException("User does not found!");
-    };
+    if (!user) {
+      throw new NotFoundException('User does not found!');
+    }
     // changing user status
     const status = await this.authService.changeUserStatus(user);
-    if(status){
-      return {message: `User has been ${status.userStatus}ed by Admin!`}
+    if (status) {
+      return { message: `User has been ${status.userStatus}ed by Admin!` };
     }
   }
 
@@ -139,17 +157,21 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'SUCCESSFULL' })
   @ApiResponse({ status: 404, description: 'BAD REQUEST' })
   async resetPassword(@Body() resetDto: ResetDto) {
-    const {email} = resetDto;
+    const { email } = resetDto;
     const userExists = await this.authService.findUserByEmail(email);
-    if(!userExists){ 
-      throw new NotFoundException("User does not exist. Try valid email.")
+    if (!userExists) {
+      throw new NotFoundException('User does not exist. Try valid email.');
     }
     // sending email
-    const emailSending = await this.authService.sendEmailUsingNodeMailer(email, userExists._id);
-    return {token : emailSending, message: "Please check your email box and enter pin."};
+    const emailSending = await this.authService.sendEmailUsingNodeMailer(
+      email,
+      userExists._id,
+    );
+    return {
+      token: emailSending,
+      message: 'Please check your email box and enter pin.',
+    };
   }
-
-
 
   @Post('/validate-pin')
   @ApiOperation({ summary: 'VALIDATE PIN' })
@@ -158,11 +180,36 @@ export class AuthController {
   validatepinCode(@Body() pinDto: PinDto, @Req() req: any) {
     return this.authService.validatePinCode(pinDto, req);
   }
+
   @Patch('/change-password')
-  @ApiOperation({ summary: 'CHANGE PASS' })
+  @ApiOperation({ summary: 'CHANGE PASSWORD' })
   @ApiResponse({ status: 200, description: 'SUCCESSFULL' })
   @ApiResponse({ status: 404, description: 'BAD REQUEST' })
-  changePassword(@Body() passwordDto: PasswordDto, @Req() req: any) {
-    return this.authService.changePassword(passwordDto, req);
+  async changePassword(@Body() passwordDto: PasswordDto, @Req() req: any) {
+    const id: ObjectId = req?.user?._id;
+    const userExists = await this.authService.findUserById(id);
+    if (!userExists) {
+      throw new NotFoundException(
+        'User with this email does not exist. Try valid email.',
+      );
+    }
+    const { password } = passwordDto;
+    const hash = await this.authService.hashPassword(password);
+    const passChanged = await this.authService.changeUserPassword(id, hash);
+    if (!passChanged) {
+      return { message: 'Some error occurred. Try again later.' };
+    }
+    return { message: 'Password has been changed!' };
+  }
+  @Get('/verify-user')
+  @ApiOperation({ summary: 'VALIDATE PIN' })
+  @ApiResponse({ status: 200, description: 'SUCCESSFULL' })
+  @ApiResponse({ status: 404, description: 'BAD REQUEST' })
+  @UseGuards(AuthGuard())
+  verifyUser(@Req() req: any) {
+    if (req?.user) {
+      return { user: req?.user };
+    }
+    return { unauthorized: true };
   }
 }

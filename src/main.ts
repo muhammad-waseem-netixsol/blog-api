@@ -2,9 +2,11 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.use(cookieParser());
   // swagger setup
   const config = new DocumentBuilder()
   .setTitle("Contact Crud in nestjs")
@@ -37,7 +39,9 @@ SwaggerModule.setup('api', app, document, {
   ],
 });
   app.useGlobalPipes(new ValidationPipe());
+
   app.enableCors()
+ 
   await app.listen(3001);
 }
 bootstrap();

@@ -9,114 +9,173 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class BlogService {
-  constructor(@InjectModel(Blog.name) private blogSchema: Model<Blog>, private cloudinary:CloudinaryService) {}
+  constructor(
+    @InjectModel(Blog.name) private blogSchema: Model<Blog>,
+    private cloudinary: CloudinaryService,
+  ) {}
   // creates a new blog
-  async create(createBlogDto: CreateBlogDto, user: User, file:Express.Multer.File) {
-    try{
-      if(user.role === "writer"){
-        const uploadedfile = await this.cloudinary.uploadImage(file).catch((err)=> {
-          throw new BadRequestException(err)
-        })
-      const { heading, status, text, category } = createBlogDto;
-      const blog = new this.blogSchema();
-      blog.heading = heading;
-      blog.status = status;
-      blog.text = text;
-      blog.user = user._id;
-      blog.image = uploadedfile.secure_url;
-      blog.category = category;
-      const newBlog = await blog.save();
-      return newBlog;
+  async create(
+    createBlogDto: CreateBlogDto,
+    user: User,
+    file: Express.Multer.File,
+  ) {
+    try {
+      if (user.role === 'writer') {
+        const uploadedfile = await this.cloudinary
+          .uploadImage(file)
+          .catch((err) => {
+            throw new BadRequestException(err);
+          });
+        const { heading, status, text, category } = createBlogDto;
+        const blog = new this.blogSchema();
+        blog.heading = heading;
+        blog.status = status;
+        blog.text = text;
+        blog.user = user._id;
+        blog.image = uploadedfile.secure_url;
+        blog.category = category;
+        const newBlog = await blog.save();
+        return newBlog;
       }
-      return {message: "Only user with writer account can create blog!"}
-    }catch(err){
-      return {error: "Server error"}
+      return { message: 'Only user with writer account can create blog!' };
+    } catch (err) {
+      return { error: 'Server error' };
     }
-    
-
   }
   // it simply returns all blog
   async findAll() {
-    return await this.blogSchema.find();
+    return await this.blogSchema
+    .find({ status: 'approved' })
+    .populate({
+      path: 'user',
+      model: 'User',
+      select: "-password -userStatus",
+    })
+    .populate({
+      path: 'reaction',
+      model: 'Reaction',
+    })
+    .populate({
+      path: 'comment',
+      populate: {
+        path: 'user',
+        model: 'User',
+        select: "-password -userStatus -createdAt -updatedAt -__v -role -_id -email",
+      },
+      model: 'Comment',
+      
+    })
+    .exec();;
+  }
+  // pending blogs
+  async pendingAll(req:any) {
+    const blogs = await this.blogSchema.find({ status: 'pending', user: req?.user?._id});
+    console.log(blogs);
+    return blogs;
   }
   // returns a blog using id
   async findOne(id: string) {
-    return await this.blogSchema.findById(id);
+    return await this.blogSchema.findById(id).populate({
+      path: 'user',
+      model: 'User',
+    })
+    .populate({
+      path: 'reaction',
+      model: 'Reaction',
+    })
+    .populate({
+      path: 'comment',
+      populate: {
+        path: 'user',
+        model: 'User',
+        select: "-password -userStatus -createdAt -updatedAt -__v -role -_id -email",
+      },
+      model: 'Comment',
+    });
   }
   // updates a blog
   async update(id: string, updateBlogDto: UpdateBlogDto, req: any) {
-    try{
-      if(req.user.role === "writer"){
-        const blogExists = await this.blogSchema.findOne({_id:id, user: req.user._id});
-      if (!blogExists) {
-        return { error: 'Invalid blog id has been sent or this was not created by you!' };
+    try {
+      if (req.user.role === 'writer') {
+        const blogExists = await this.blogSchema.findOne({
+          _id: id,
+          user: req.user._id,
+        });
+        if (!blogExists) {
+          return {
+            error:
+              'Invalid blog id has been sent or this was not created by you!',
+          };
+        }
+        const { text, heading } = updateBlogDto;
+        await this.blogSchema.findByIdAndUpdate(id, {
+          text,
+          heading,
+        });
+        return { message: 'Blog has been updated!' };
       }
-      const { text, heading } = updateBlogDto;
-      await this.blogSchema.findByIdAndUpdate(id, {
-        text,
-        heading,
-      });
-      return { message: 'Blog has been updated!' };
-      }
-      return {message: "Only user with writer account can update own blog!"}
-    }catch(err){
-      return {error: "Invalid data passed in the request body."}
+      return { message: 'Only user with writer account can update own blog!' };
+    } catch (err) {
+      return { error: 'Invalid data passed in the request body.' };
     }
-    
   }
-  // deletes a blog 
-  async remove(id: string, req:any) {
-    try{
-      if(req.user.userStatus === "user"){
-       return {message: "User account can not delete any blog."} 
+  // returns only user's own blogs
+  async getAllUserBlogs(req: any) {
+    console.log(req.user);
+    return await this.blogSchema.find({});
+  }
+  // deletes a blog
+  async remove(id: string, req: any) {
+    try {
+      if (req.user.userStatus === 'user') {
+        return { message: 'User account can not delete any blog.' };
       }
       const blogExists = await this.blogSchema.findById(id);
-      if(!blogExists){
-        return {message: "Blog You trying to remove does not exist"}
+      if (!blogExists) {
+        return { message: 'Blog You trying to remove does not exist' };
       }
-      await this.blogSchema.findOneAndDelete({_id:id, user:req.user._id});
+      await this.blogSchema.findOneAndDelete({ _id: id, user: req.user._id });
       return { message: `blog with with ${id} has been deleted!` };
-    }catch(err){
-      return {error: "Ooppss! invalid data in the req body"}
+    } catch (err) {
+      return { error: 'Ooppss! invalid data in the req body' };
     }
-    
   }
 
-  // approves a blog 
-  async approve(id: string, req:any) {
-    try{
+  // approves a blog
+  async approve(id: string, req: any) {
+    try {
       const user = req?.user;
-      if(user.role !== "admin"){
-        return {message: "Only admin "}
+      if (user.role !== 'admin') {
+        return { message: 'Only admin can approve or reject blogs!' };
       }
       const blogExists = await this.blogSchema.findById(id);
-      if(!blogExists){
-        return {error: "Blog not found"};
+      if (!blogExists) {
+        return { error: 'Blog not found' };
       }
       blogExists.status = postStatus.APPROVED;
       await blogExists.save();
-      return {message: "Post has been approved"};
-    }catch(err){
-      return {error: "Ooppss! invalid data in the req body"}
+      return { message: 'Post has been approved' };
+    } catch (err) {
+      return { error: 'Ooppss! invalid data in the req body' };
     }
   }
-  
-  // rejects a blog 
-  async reject(id: string, req:any) {
-    try{
+
+  // rejects a blog
+  async reject(id: string, req: any) {
+    try {
       const user = req?.user;
-      if(user.role !== "admin"){
-        return {message: "Only admin can approved and reject posts"}
+      if (user.role !== 'admin') {
+        return { message: 'Only admin can approved and reject posts' };
       }
       const blogExists = await this.blogSchema.findById(id);
-      if(!blogExists){
-        return {error: "Blog not found"};
+      if (!blogExists) {
+        return { error: 'Blog not found' };
       }
       blogExists.status = postStatus.REJECTED;
       await blogExists.save();
-      return {message: "Post has been rejected"};
-    }catch(err){
-      return {error: "Ooppss! invalid data in the req body"};
+      return { message: 'Post has been rejected' };
+    } catch (err) {
+      return { error: 'Ooppss! invalid data in the req body' };
     }
   }
 }

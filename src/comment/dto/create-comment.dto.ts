@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
-import { User } from "src/auth/schema/user.schema";
+import { IsNotEmpty, IsString, MaxLength, MinLength } from "class-validator";
+
 
 export class CreateCommentDto {
     @ApiProperty()
@@ -9,9 +9,6 @@ export class CreateCommentDto {
     @MinLength(1)
     @MaxLength(100)
     comment:string 
-    @ApiProperty()
-    @IsOptional()
-    user: User
     @ApiProperty()
     @IsNotEmpty()
     blog: string
