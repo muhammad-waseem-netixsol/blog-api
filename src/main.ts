@@ -41,7 +41,7 @@ SwaggerModule.setup('api', app, document, {
 });
   app.useGlobalPipes(new ValidationPipe());
 const corsOptions: CorsOptions = {
-    origin: ['https://finale-frontend.vercel.app'],
+    origin: ['http://localhost:3000'],
     methods:  ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
   };
   // Enable CORS with options
