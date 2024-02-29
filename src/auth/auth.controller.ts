@@ -122,7 +122,6 @@ export class AuthController {
     }
     // assign jwt
     const resp = await this.authService.assignToken(userExists._id, userExists);
-    response.cookie('token', JSON.stringify(resp), { httpOnly: true });
     return { response: resp };
   }
 
