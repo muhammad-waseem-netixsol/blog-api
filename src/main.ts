@@ -41,7 +41,7 @@ SwaggerModule.setup('api', app, document, {
 });
   app.useGlobalPipes(new ValidationPipe());
 const corsOptions: CorsOptions = {
-    origin: ['http://localhost:3000'],
+    origin: ['https://blog-next-js-ruby-gamma.vercel.app'],
     methods:  ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
   };
   // Enable CORS with options
