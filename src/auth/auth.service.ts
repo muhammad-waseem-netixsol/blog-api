@@ -28,10 +28,10 @@ export class AuthService {
   }
   // this service signs token
   async assignToken(id: ObjectId, user: User) {
+    console.log(user)
     return {
       token: this.jwtService.sign({ id: id.toString() },{expiresIn: "3d"}),
-      username: user.name,
-      email: user.email,
+      user,
     };
   }
   // checking multer file is valid

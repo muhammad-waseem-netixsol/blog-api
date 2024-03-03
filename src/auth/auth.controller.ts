@@ -118,8 +118,8 @@ export class AuthController {
       throw new ForbiddenException('invalid credentials!');
     }
     // assign jwt
-    const resp = await this.authService.assignToken(userExists._id, userExists);
-    return { response: resp, user: userExists };
+    return await this.authService.assignToken(userExists._id, userExists);
+    
   }
 
   @Patch(':userId')
