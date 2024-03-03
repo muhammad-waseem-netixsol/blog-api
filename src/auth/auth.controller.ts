@@ -10,14 +10,12 @@ import {
   Patch,
   Post,
   Req,
-  Res,
   UnauthorizedException,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { Response } from 'express';
 import { SignUpDto } from './dto/signup.dto';
 import { LogInDto } from './dto/login.dto';
 import { AuthGuard } from '@nestjs/passport';
@@ -103,7 +101,6 @@ export class AuthController {
   @ApiResponse({ status: 404, description: 'BAD REQUEST' })
   async logIn(
     @Body() logInDto: LogInDto,
-    @Res({ passthrough: true }) response: Response,
   ) {
     const { email } = logInDto;
     // verify user
@@ -122,7 +119,7 @@ export class AuthController {
     }
     // assign jwt
     const resp = await this.authService.assignToken(userExists._id, userExists);
-    return { response: resp };
+    return { response: resp, user: userExists };
   }
 
   @Patch(':userId')
