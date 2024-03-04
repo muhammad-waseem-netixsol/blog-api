@@ -121,8 +121,7 @@ export class BlogService {
   }
   // returns only user's own blogs
   async getAllUserBlogs(req: any) {
-    console.log(req.user);
-    return await this.blogSchema.find({});
+    return await this.blogSchema.find({user: req?.user?._id});
   }
   // deletes a blog
   async remove(id: string, req: any) {
