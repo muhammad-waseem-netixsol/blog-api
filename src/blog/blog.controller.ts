@@ -58,6 +58,7 @@ export class BlogController {
   userBlogs(@Req() req:any) {
     return this.blogService.getAllUserBlogs(req);
   }
+
   @Get("/pending-blogs")
   @ApiOperation({summary:"GET ALL APPROVED BLOGS"})
   @ApiResponse({status: 200, description: "SUCCESSFULL"})
@@ -65,6 +66,13 @@ export class BlogController {
   @UseGuards(AuthGuard())
   findPendingBlogs(@Req() req:any) {
     return this.blogService.pendingAll(req);
+  }
+  @Get("/admin-blogs")
+  @ApiResponse({status: 200, description: "SUCCESSFULL"})
+  @ApiResponse({status: 404, description: "BAD REQUEST"})
+  @UseGuards(AuthGuard())
+  adminGetsAllBlogs(@Req() req:any) {
+    return this.blogService.adminBlogs(req);
   }
 
   @ApiBearerAuth()

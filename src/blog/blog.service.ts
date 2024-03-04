@@ -73,6 +73,15 @@ export class BlogService {
     console.log(blogs);
     return blogs;
   }
+  // admin blogs
+  async adminBlogs(req:any) {
+    if(req?.user?.role == 'admin'){
+      const blogs = await this.blogSchema.find().exec();;
+    console.log(blogs);
+    return blogs;
+    }
+    return {message : "only admin can get all blogs!", error : true};
+  }
   // returns a blog using id
   async findOne(id: string) {
     return await this.blogSchema.findById(id).populate({
