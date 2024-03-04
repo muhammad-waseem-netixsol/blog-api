@@ -37,7 +37,7 @@ export class BlogService {
         const newBlog = await blog.save();
         return newBlog;
       }
-      return { message: 'Only user with writer account can create blog!' };
+      return { message: 'Only user with writer account can create blog!', status: false };
     } catch (err) {
       return { error: 'Server error' };
     }
