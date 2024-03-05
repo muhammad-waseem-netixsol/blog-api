@@ -29,7 +29,7 @@ export class AuthService {
   // this service signs token
   async assignToken(id: ObjectId, user: User) {
     if(user.userStatus === "block"){
-      return {message: "You have been blocked by admin!"}
+      return {message: "You have been blocked by admin!", error: true}
     }
     return {
       token: this.jwtService.sign({ id: id.toString() },{expiresIn: "3d"}),
