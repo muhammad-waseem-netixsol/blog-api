@@ -122,6 +122,16 @@ export class AuthController {
     
   }
 
+  @Get('/users')
+  @ApiOperation({ summary: 'retruns all users' })
+  @ApiResponse({ status: 200, description: 'SUCCESSFULL' })
+  @ApiResponse({ status: 404, description: 'BAD REQUEST' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard())
+  allUsers( @Req() req: any) {
+    return this.authService.getAllUsers(req);
+  }
+
   @Patch(':userId')
   @ApiOperation({ summary: 'USER STATUS' })
   @ApiResponse({ status: 200, description: 'SUCCESSFULL' })

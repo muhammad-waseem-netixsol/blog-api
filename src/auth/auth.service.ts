@@ -145,4 +145,11 @@ export class AuthService {
     user.password = password;
     return user.save();
   }
+  async getAllUsers(req:any) {
+    if(req?.user?.role == 'admin'){
+      return await this.userModel.find({}, '-password');
+    }else{
+      return {message : "Only admin can access this route"}
+    }
+  };
 }
