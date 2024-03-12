@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from "class-validator"
+import { IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from "class-validator"
 import { postStatus } from "../schema/blog.schema"
 import { Reaction } from "src/reaction/schema/reaction.schema"
 import { Comment } from "src/comment/schema/comment.schema"
@@ -14,7 +14,7 @@ export class CreateBlogDto {
     @ApiProperty()
     @IsNotEmpty({message:"Text body can not be empty"})
     @IsString({message: "Heading must be valid string"})
-    @MaxLength(1000)
+  
     @MinLength(10)
     text: string 
     @ApiProperty()
